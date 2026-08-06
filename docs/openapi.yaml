@@ -345,9 +345,31 @@ paths:
     get:
       tags: [Batteries]
       summary: List batteries
+      description: |
+        Returns all batteries by default, paginated:
+        `{{baseUrl}}/v1/batteries`
+
+        Optionally pass `batteryId` as a query parameter to look up a single
+        battery instead of the full list:
+        `{{baseUrl}}/v1/batteries?batteryId=ML3AJ4FPBB00468555`
+
+        `data` is always an array. Without `batteryId` it contains a page of
+        batteries alongside a `pagination` object. With `batteryId` it
+        contains zero or one matching item, and `pagination` is omitted
+        from the response entirely (see the two examples below).
+      parameters:
+        - in: query
+          name: batteryId
+          required: false
+          schema: { type: string }
+          description: |
+            Optional. Filters the list down to the single battery whose
+            canId matches this value. When set, the response omits
+            `pagination`.
+          example: ML3AJ4FPBB00468555
       responses:
         "200":
-          description: Battery list
+          description: Battery list (paginated), or a single-item list with no pagination field when batteryId was provided
           content:
             application/json:
               schema:
@@ -356,6 +378,87 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Battery" }
+                  pagination:
+                    allOf:
+                      - $ref: "#/components/schemas/Pagination"
+                    description: Only present in the response when batteryId is not sent.
+              examples:
+                allBatteries:
+                  summary: "GET /v1/batteries"
+                  value:
+                    data:
+                      - canId: ML3AJ4FPBB00468555
+                        driverOrganization: ZYPP
+                        createdAt: { _seconds: 1785839077, _nanoseconds: 836000000 }
+                        updatedAt: { _seconds: 1785839285, _nanoseconds: 587000000 }
+                        batteryWith:
+                          type: "null"
+                          value: "null"
+                          batteryWithAt: { _seconds: 1785839285, _nanoseconds: 588000000 }
+                          meta:
+                            city: GIRUGRAM
+                            driverId: ZYPP-1785838678649
+                            driverName: Chirag Test
+                            driverOrganization: ZYPP
+                            driverUid: VAIr6gMDcRVVaRffBOwMDOTCiJ33
+                            model: Rental
+                            phoneNumber: "917788778877"
+                            vehicleCategory: "2"
+                      - canId: ML3AJ4FPBA00486
+                        driverOrganization: ZYPP
+                        createdAt: { _seconds: 1782479090, _nanoseconds: 674000000 }
+                        updatedAt: { _seconds: 1785862392, _nanoseconds: 55000000 }
+                        batteryWith:
+                          type: driver
+                          value: V-2W-PUN-6002
+                          batteryWithAt: { _seconds: 1785862392, _nanoseconds: 56000000 }
+                          meta:
+                            city: PUNE
+                            driverId: V-2W-PUN-6002
+                            driverName: Yogesh Pardhi
+                            driverOrganization: ZYPP
+                            driverUid: CGpA7RIfOKMzAqW6OBFE1wnXh1m2
+                            model: Rental
+                            phoneNumber: "917744927535"
+                            vehicleCategory: "2"
+                      - canId: ML3AJPHODB00398
+                        driverOrganization: ZYPP
+                        createdAt: { _seconds: 1758540243, _nanoseconds: 576000000 }
+                        updatedAt: { _seconds: 1783604867, _nanoseconds: 211000000 }
+                        batteryWith:
+                          type: outside
+                          value: inventory
+                          batteryWithAt: { _seconds: 1783604867, _nanoseconds: 211000000 }
+                          meta: {}
+                    pagination:
+                      limit: 10
+                      offset: 0
+                      totalCount: 14
+                      currentPage: 1
+                      totalPages: 2
+                byBatteryId:
+                  summary: "GET /v1/batteries?batteryId=ML3AJ4FPBA00486 — no pagination field in this response"
+                  value:
+                    data:
+                      - canId: ML3AJ4FPBA00486
+                        driverOrganization: ZYPP
+                        createdAt: { _seconds: 1782479090, _nanoseconds: 674000000 }
+                        updatedAt: { _seconds: 1785862392, _nanoseconds: 55000000 }
+                        batteryWith:
+                          type: driver
+                          value: V-2W-PUN-6002
+                          batteryWithAt: { _seconds: 1785862392, _nanoseconds: 56000000 }
+                          meta:
+                            city: PUNE
+                            driverId: V-2W-PUN-6002
+                            driverName: Yogesh Pardhi
+                            driverOrganization: ZYPP
+                            driverUid: CGpA7RIfOKMzAqW6OBFE1wnXh1m2
+                            model: Rental
+                            phoneNumber: "917744927535"
+                            vehicleCategory: "2"
+        "400":
+          $ref: "#/components/responses/Error"
 
   /v1/batteries/mapping:
     get:
@@ -538,21 +641,48 @@ components:
         createdAt: { type: object, additionalProperties: true }
         updatedAt: { type: object, additionalProperties: true }
 
+    FirestoreTimestamp:
+      type: object
+      description: Raw Firestore timestamp as returned by this API (not an ISO string).
+      properties:
+        _seconds: { type: integer }
+        _nanoseconds: { type: integer }
+
     Battery:
       type: object
+      description: |
+        Field presence varies slightly by endpoint. `id` and `batteryVendor`
+        show up on /v1/batteries/mapping but are not returned by
+        GET /v1/batteries — treat both as optional/nullable.
       properties:
-        id: { type: string, description: Same value as canId }
+        id:
+          type: string
+          nullable: true
+          description: Same value as canId. Only present on some endpoints (e.g. /v1/batteries/mapping).
         canId: { type: string }
         batteryVendor: { type: string, nullable: true }
         driverOrganization: { type: string }
+        createdAt: { $ref: "#/components/schemas/FirestoreTimestamp" }
+        updatedAt: { $ref: "#/components/schemas/FirestoreTimestamp" }
         batteryWith:
           type: object
           properties:
-            type: { type: string, enum: [driver, station, "null"] }
-            value: { type: string }
+            type:
+              type: string
+              enum: [driver, station, outside, "null"]
+              description: '"null" (the string) and "outside" both mean the battery is not with a driver; "outside" is seen paired with value "inventory".'
+            value:
+              type: string
+              nullable: true
+              description: driverId when type=driver, a station id when type=station, "inventory" when type=outside, or the string "null" when unassigned.
+            batteryWithAt: { $ref: "#/components/schemas/FirestoreTimestamp" }
             meta:
               type: object
               additionalProperties: true
+              description: |
+                Populated with driver details (city, driverId, driverName,
+                driverOrganization, driverUid, model, phoneNumber,
+                vehicleCategory) when type=driver. Empty object otherwise.
 
     BatteryMappingByDriver:
       type: object
