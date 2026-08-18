@@ -158,6 +158,24 @@ paths:
                 driverStatus:
                   type: string
                   enum: [Trial, Onboarded/Active, On-Leave, Blocked, Offboarded]
+                  description: |
+                    **Driver Status**
+
+                    - **Trial** — driver is currently undergoing a trial period. Not to be used at present.
+                    - **Onboarded/Active** — driver has completed onboarding and is actively working.
+                    - **On-Leave** — same restriction as Blocked: driver is restricted from operations and cannot swap batteries.
+                    - **Blocked** — driver is restricted from operations and cannot swap batteries.
+                    - **Offboarded** — driver is no longer active and requires asset recovery. Once a driver is offboarded, their assigned battery must be unassigned (via `POST /v1/batteries/assignment`, `action: deassign`) so it can be made available for further use.
+
+                    **Internal active/leave classification** — per the
+                    driverCurrentStatusSW derivation seen in backend code:
+                    `Trial`, `Onboarded/Active`, and `Active` all map to
+                    `active`; `On-Leave`, `Blocked`, and `Offboarded` all map
+                    to `leave`. Note the code has a separate `Active` case
+                    distinct from `Onboarded/Active` — this enum only lists
+                    `Onboarded/Active`, so confirm with the backend team
+                    whether bare `Active` is also a value driver records can
+                    carry and whether it belongs in this enum.
                 vehicleId: { type: string }
                 driverId:
                   type: string
@@ -271,6 +289,24 @@ paths:
                 driverStatus:
                   type: string
                   enum: [Trial, Onboarded/Active, On-Leave, Blocked, Offboarded]
+                  description: |
+                    **Driver Status**
+
+                    - **Trial** — driver is currently undergoing a trial period. Not to be used at present.
+                    - **Onboarded/Active** — driver has completed onboarding and is actively working.
+                    - **On-Leave** — same restriction as Blocked: driver is restricted from operations and cannot swap batteries.
+                    - **Blocked** — driver is restricted from operations and cannot swap batteries.
+                    - **Offboarded** — driver is no longer active and requires asset recovery. Once a driver is offboarded, their assigned battery must be unassigned (via `POST /v1/batteries/assignment`, `action: deassign`) so it can be made available for further use.
+
+                    **Internal active/leave classification** — per the
+                    driverCurrentStatusSW derivation seen in backend code:
+                    `Trial`, `Onboarded/Active`, and `Active` all map to
+                    `active`; `On-Leave`, `Blocked`, and `Offboarded` all map
+                    to `leave`. Note the code has a separate `Active` case
+                    distinct from `Onboarded/Active` — this enum only lists
+                    `Onboarded/Active`, so confirm with the backend team
+                    whether bare `Active` is also a value driver records can
+                    carry and whether it belongs in this enum.
                 vehicleId: { type: string }
       responses:
         "200":
@@ -293,6 +329,62 @@ paths:
     post:
       tags: [Batteries]
       summary: Assign or deassign a battery to/from a driver
+      description: |
+        ## Response shape — rollout in progress
+
+        **Current response** (what the API returns today):
+
+        - Assign:
+          ```json
+          { "message": "Battery assigned successfully" }
+          ```
+        - Deassign:
+          ```json
+          { "message": "Battery deassigned successfully" }
+          ```
+
+        **What we'll send going forward:**
+
+        Assign will report whether the battery was already assigned at the
+        time of the request, and — if so — whether it was already with the
+        *same* driver or is being force-reassigned from a *different*
+        driver:
+
+        - Battery was unassigned at the time of the request:
+          ```json
+          { "message": "Battery assigned successfully", "alreadyAssigned": false }
+          ```
+        - Battery was already with this same driver:
+          ```json
+          {
+            "message": "Battery assigned successfully",
+            "alreadyAssigned": true,
+            "sameDriver": true,
+            "currentlyAssignedTo": "V-2W-PUN-0409"
+          }
+          ```
+        - Battery was force-reassigned from a different driver:
+          ```json
+          {
+            "message": "Battery assigned successfully",
+            "alreadyAssigned": true,
+            "sameDriver": false,
+            "currentlyAssignedTo": "V-2W-PUN-0311"
+          }
+          ```
+
+        Deassign will report whether the battery was actively assigned to
+        this driver at the time of the request:
+
+        - Battery was actively with this driver:
+          ```json
+          { "message": "Battery deassigned successfully", "alreadyDeassigned": false }
+          ```
+        - Battery wasn't actively assigned to this driver (already
+          deassigned, or was never theirs):
+          ```json
+          { "message": "Battery deassigned successfully", "alreadyDeassigned": true }
+          ```
       requestBody:
         required: true
         content:
@@ -310,13 +402,81 @@ paths:
               action: assign
       responses:
         "200":
-          description: Confirmation
+          description: |
+            Confirmation. See the endpoint description above for the
+            current response shape and the additional fields
+            (`alreadyAssigned`, `sameDriver`, `currentlyAssignedTo`,
+            `alreadyDeassigned`) that will be added going forward.
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   message: { type: string, example: Battery assigned successfully }
+                  alreadyAssigned:
+                    type: boolean
+                    description: |
+                      Assign only, going forward. True if the battery was
+                      already assigned to a driver (this one or another) at
+                      the time of the request.
+                  sameDriver:
+                    type: boolean
+                    description: |
+                      Assign only, going forward. Present only when
+                      alreadyAssigned is true. True if the battery was
+                      already with this same driver; false if it was
+                      force-reassigned from a different driver.
+                  currentlyAssignedTo:
+                    type: string
+                    description: |
+                      Assign only, going forward. Present only when
+                      alreadyAssigned is true. The driverId the battery was
+                      assigned to at the time of the request.
+                  alreadyDeassigned:
+                    type: boolean
+                    description: |
+                      Deassign only, going forward. True if the battery
+                      wasn't actively assigned to this driver at the time
+                      of the request (already deassigned, or was never
+                      theirs).
+              examples:
+                assignCurrent:
+                  summary: "Current — assign"
+                  value:
+                    message: Battery assigned successfully
+                assignUnassigned:
+                  summary: "Going forward — assign, battery was unassigned"
+                  value:
+                    message: Battery assigned successfully
+                    alreadyAssigned: false
+                assignSameDriver:
+                  summary: "Going forward — assign, already with same driver"
+                  value:
+                    message: Battery assigned successfully
+                    alreadyAssigned: true
+                    sameDriver: true
+                    currentlyAssignedTo: V-2W-PUN-0409
+                assignForceReassigned:
+                  summary: "Going forward — assign, force-reassigned from a different driver"
+                  value:
+                    message: Battery assigned successfully
+                    alreadyAssigned: true
+                    sameDriver: false
+                    currentlyAssignedTo: V-2W-PUN-0311
+                deassignCurrent:
+                  summary: "Current — deassign"
+                  value:
+                    message: Battery deassigned successfully
+                deassignActive:
+                  summary: "Going forward — deassign, was actively assigned to this driver"
+                  value:
+                    message: Battery deassigned successfully
+                    alreadyDeassigned: false
+                deassignInactive:
+                  summary: "Going forward — deassign, wasn't actively assigned to this driver"
+                  value:
+                    message: Battery deassigned successfully
+                    alreadyDeassigned: true
         "400":
           $ref: "#/components/responses/Error"
 
