@@ -166,16 +166,6 @@ paths:
                     - **On-Leave** — same restriction as Blocked: driver is restricted from operations and cannot swap batteries.
                     - **Blocked** — driver is restricted from operations and cannot swap batteries.
                     - **Offboarded** — driver is no longer active and requires asset recovery. Once a driver is offboarded, their assigned battery must be unassigned (via `POST /v1/batteries/assignment`, `action: deassign`) so it can be made available for further use.
-
-                    **Internal active/leave classification** — per the
-                    driverCurrentStatusSW derivation seen in backend code:
-                    `Trial`, `Onboarded/Active`, and `Active` all map to
-                    `active`; `On-Leave`, `Blocked`, and `Offboarded` all map
-                    to `leave`. Note the code has a separate `Active` case
-                    distinct from `Onboarded/Active` — this enum only lists
-                    `Onboarded/Active`, so confirm with the backend team
-                    whether bare `Active` is also a value driver records can
-                    carry and whether it belongs in this enum.
                 vehicleId: { type: string }
                 driverId:
                   type: string
@@ -297,16 +287,6 @@ paths:
                     - **On-Leave** — same restriction as Blocked: driver is restricted from operations and cannot swap batteries.
                     - **Blocked** — driver is restricted from operations and cannot swap batteries.
                     - **Offboarded** — driver is no longer active and requires asset recovery. Once a driver is offboarded, their assigned battery must be unassigned (via `POST /v1/batteries/assignment`, `action: deassign`) so it can be made available for further use.
-
-                    **Internal active/leave classification** — per the
-                    driverCurrentStatusSW derivation seen in backend code:
-                    `Trial`, `Onboarded/Active`, and `Active` all map to
-                    `active`; `On-Leave`, `Blocked`, and `Offboarded` all map
-                    to `leave`. Note the code has a separate `Active` case
-                    distinct from `Onboarded/Active` — this enum only lists
-                    `Onboarded/Active`, so confirm with the backend team
-                    whether bare `Active` is also a value driver records can
-                    carry and whether it belongs in this enum.
                 vehicleId: { type: string }
       responses:
         "200":
