@@ -8,7 +8,9 @@ info:
   version: 1.0.0
 
 servers:
-  - url: https://test.baas.batterypool.com/client
+  - url: https://client.api.batterypool.com/
+
+it is working now
     description: Test/sandbox environment
 
 security:
