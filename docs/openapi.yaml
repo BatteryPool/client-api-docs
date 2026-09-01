@@ -11,7 +11,7 @@ servers:
   - url: https://client.api.batterypool.com/
 
 it is working now
-    description: Test/sandbox environment
+    description: Prod environment
 
 security:
   - bearerAuth: []
