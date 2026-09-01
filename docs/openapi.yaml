@@ -9,8 +9,6 @@ info:
 
 servers:
   - url: https://client.api.batterypool.com/
-
-it is working now
     description: Prod environment
 
 security:
