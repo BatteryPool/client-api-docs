@@ -28,18 +28,16 @@ jobs:
 
       - name: Fetch all documentation branches
         run: |
-          git fetch --depth=1 origin main test dev
+          git fetch --depth=1 origin main test
 
       - name: Prepare site
         run: |
           rm -rf site
           mkdir -p site
           mkdir -p site/test
-          mkdir -p site/dev
 
           git archive origin/main:docs | tar -x -C site
           git archive origin/test:docs | tar -x -C site/test
-          git archive origin/dev:docs | tar -x -C site/dev
 
           touch site/.nojekyll
 
