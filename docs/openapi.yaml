@@ -9,7 +9,7 @@ info:
 
 servers:
   - url: https://client.api.batterypool.com/
-    description: Prod environment
+    description: Test environment
 
 security:
   - bearerAuth: []
