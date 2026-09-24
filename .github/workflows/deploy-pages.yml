@@ -1,0 +1,64 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+      - test
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout test
+        uses: actions/checkout@v4
+        with:
+          ref: test
+          path: test
+
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: dev
+
+      - name: Prepare site
+        run: |
+          mkdir -p site
+
+          cp -R main/docs/. site/
+          mkdir -p site/test
+          cp -R test/docs/. site/test/
+          mkdir -p site/dev
+          cp -R dev/docs/. site/dev/
+
+          touch site/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
