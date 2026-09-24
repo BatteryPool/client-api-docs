@@ -26,18 +26,41 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Fetch all documentation branches
+      - name: Fetch all branches
         run: |
-          git fetch --depth=1 origin main test
+          git fetch --prune --unshallow || git fetch --prune
 
       - name: Prepare site
+        shell: bash
         run: |
           rm -rf site
           mkdir -p site
-          mkdir -p site/test
 
-          git archive origin/main:docs | tar -x -C site
-          git archive origin/test:docs | tar -x -C site/test
+          git fetch --all --prune
+
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/); do
+          branch="${ref#origin/}"
+
+          # Ignore symbolic HEAD
+          [ "$branch" = "HEAD" ] && continue
+
+          echo "Processing branch: $branch"
+
+          # Skip branches without docs/
+          if ! git cat-file -e "$ref:docs" 2>/dev/null; then
+              echo "No docs found in $branch, skipping..."
+              continue
+          fi
+
+          if [ "$branch" = "main" ]; then
+              target="site"
+          else
+              target="site/$branch"
+              mkdir -p "$target"
+          fi
+
+          git archive "$ref:docs" | tar -x -C "$target"
+          done
 
           touch site/.nojekyll
 
