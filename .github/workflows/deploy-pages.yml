@@ -1,0 +1,77 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+      - test
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Fetch all branches
+        run: |
+          git fetch --prune --unshallow || git fetch --prune
+
+      - name: Prepare site
+        shell: bash
+        run: |
+          rm -rf site
+          mkdir -p site
+
+          git fetch --all --prune
+
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/); do
+          branch="${ref#origin/}"
+
+          # Ignore symbolic HEAD
+          [ "$branch" = "HEAD" ] && continue
+
+          echo "Processing branch: $branch"
+
+          # Skip branches without docs/
+          if ! git cat-file -e "$ref:docs" 2>/dev/null; then
+              echo "No docs found in $branch, skipping..."
+              continue
+          fi
+
+          if [ "$branch" = "main" ]; then
+              target="site"
+          else
+              target="site/$branch"
+              mkdir -p "$target"
+          fi
+
+          git archive "$ref:docs" | tar -x -C "$target"
+          done
+
+          touch site/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
