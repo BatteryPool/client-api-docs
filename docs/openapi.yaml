@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: BP <> ZYPP Client API Documentation
+  title: BP <> Client API Documentation
   description: |
     Partner integration API for fleet management — drivers, batteries, and
     swap transactions. All endpoints require a bearer token obtained via
@@ -37,7 +37,7 @@ paths:
                 email: { type: string, format: email }
                 password: { type: string, format: password }
             example:
-              email: api-zypp-sandbox@batterypool.com
+              email: api-sandbox@batterypool.com
               password: "your-sandbox-password"
       responses:
         "200":
@@ -130,9 +130,9 @@ paths:
                 data:
                   id: lVcfkIw1j5Zq4PwlDF9M
                   isActive: true
-                  orgName: ZYPP
-                  name: Zypp Sandbox
-                  email: api-zypp-sandbox@batterypool.com
+                  orgName: TEST
+                  name: Client Sandbox
+                  email: api-sandbox@batterypool.com
                   driverConfig:
                     defaultSwapFees: [3, 35]
 
@@ -528,7 +528,7 @@ paths:
                   value:
                     data:
                       - canId: ML3AJ4FPBB00468555
-                        driverOrganization: ZYPP
+                        driverOrganization: TEST
                         createdAt: { _seconds: 1785839077, _nanoseconds: 836000000 }
                         updatedAt: { _seconds: 1785839285, _nanoseconds: 587000000 }
                         batteryWith:
@@ -537,15 +537,15 @@ paths:
                           batteryWithAt: { _seconds: 1785839285, _nanoseconds: 588000000 }
                           meta:
                             city: GIRUGRAM
-                            driverId: ZYPP-1785838678649
+                            driverId: TEST-1785838678649
                             driverName: Chirag Test
-                            driverOrganization: ZYPP
+                            driverOrganization: TEST
                             driverUid: VAIr6gMDcRVVaRffBOwMDOTCiJ33
                             model: Rental
                             phoneNumber: "917788778877"
                             vehicleCategory: "2"
                       - canId: ML3AJ4FPBA00486
-                        driverOrganization: ZYPP
+                        driverOrganization: TEST
                         createdAt: { _seconds: 1782479090, _nanoseconds: 674000000 }
                         updatedAt: { _seconds: 1785862392, _nanoseconds: 55000000 }
                         batteryWith:
@@ -556,13 +556,13 @@ paths:
                             city: PUNE
                             driverId: V-2W-PUN-6002
                             driverName: Yogesh Pardhi
-                            driverOrganization: ZYPP
+                            driverOrganization: TEST
                             driverUid: CGpA7RIfOKMzAqW6OBFE1wnXh1m2
                             model: Rental
                             phoneNumber: "917744927535"
                             vehicleCategory: "2"
                       - canId: ML3AJPHODB00398
-                        driverOrganization: ZYPP
+                        driverOrganization: TEST
                         createdAt: { _seconds: 1758540243, _nanoseconds: 576000000 }
                         updatedAt: { _seconds: 1783604867, _nanoseconds: 211000000 }
                         batteryWith:
@@ -581,7 +581,7 @@ paths:
                   value:
                     data:
                       - canId: ML3AJ4FPBA00486
-                        driverOrganization: ZYPP
+                        driverOrganization: TEST
                         createdAt: { _seconds: 1782479090, _nanoseconds: 674000000 }
                         updatedAt: { _seconds: 1785862392, _nanoseconds: 55000000 }
                         batteryWith:
@@ -592,7 +592,7 @@ paths:
                             city: PUNE
                             driverId: V-2W-PUN-6002
                             driverName: Yogesh Pardhi
-                            driverOrganization: ZYPP
+                            driverOrganization: TEST
                             driverUid: CGpA7RIfOKMzAqW6OBFE1wnXh1m2
                             model: Rental
                             phoneNumber: "917744927535"
@@ -646,7 +646,7 @@ paths:
                               phoneNumber: "919999999999"
                               driverId: V-2W-PUN-2045
                               driverName: Test Driver
-                              driverOrganization: ZYPP
+                              driverOrganization: TEST
                 byBatteryId:
                   summary: "?batteryId=... response"
                   value:
@@ -656,7 +656,7 @@ paths:
                         driverId: V-2W-PUN-2045
                         name: Test Driver
                         city: Pune
-                        driverOrganization: ZYPP
+                        driverOrganization: TEST
         "400":
           $ref: "#/components/responses/Error"
         "404":
