@@ -19,6 +19,7 @@ tags:
   - name: Drivers
   - name: Batteries
   - name: Swaps
+  - name: Stations
 
 paths:
   /v1/auth/login:
@@ -702,6 +703,111 @@ paths:
                   pagination:
                     $ref: "#/components/schemas/Pagination"
 
+  /v1/stations/availability:
+    get:
+      tags: [Stations]
+      summary: Get nearby station availability
+      description: |
+        Returns swap stations available to the specified driver within
+        a 40 km radius of the supplied latitude and longitude,
+        including battery availability for each station.
+      parameters:
+        - in: query
+          name: lat
+          required: true
+          description: Driver's latitude in decimal degrees.
+          schema: { type: number }
+          example: 18.517562
+        - in: query
+          name: lng
+          required: true
+          description: Driver's longitude in decimal degrees.
+          schema: { type: number }
+          example: 73.933784
+        - in: query
+          name: driverId
+          required: true
+          description: Driver's unique ID.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Nearby stations and their battery availability.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StationAvailability"
+                  totalCount:
+                    type: integer
+                    description: Total number of stations returned.
+              example:
+                data:
+                  - deviceId: "866557054026648"
+                    stationName: FOCO-PUN-06A
+                    address: Magarpatta Pune
+                    location:
+                      gps_lat: 18.520772793432386
+                      gps_long: 73.93715708960612
+                    lastSeen:
+                      _seconds: 1795003930
+                      _nanoseconds: 71000000
+                    soc: [100, 98, 99, 0, 0, 0, 0, 0]
+                    canId:
+                      - ML3AJABODA00059
+                      - ML3AJ3FPBB00324
+                      - ML3AJ4FPBA00478
+                      - ""
+                      - ""
+                      - ""
+                      - ""
+                      - ""
+                    chargedBatteryCount: 3
+                    distanceKm: 0.5039363464307189
+                    status: online
+                totalCount: 1
+        "400":
+          description: |
+            Missing or invalid lat, lng or driverId, or an unknown
+            parameter was sent (plain text); or the driver has
+            no organisation field (JSON).
+          content:
+            text/plain:
+              schema: { type: string }
+              example: Event object failed validation
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                message: Driver document has no organisation field
+        "401":
+          description: Missing, invalid or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                message: Unauthorized
+        "404":
+          description: No driver exists for the supplied driverId.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                message: Driver not found
+        "500":
+          description: Unexpected server failure. Retry later.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                message: Internal server error
+
 components:
   securitySchemes:
     bearerAuth:
@@ -879,3 +985,40 @@ components:
           properties:
             status: { type: string, enum: [live, stale, offline, unknown] }
             ageMinutes: { type: integer, nullable: true }
+
+    StationAvailability:
+      type: object
+      properties:
+        deviceId: { type: string }
+        stationName: { type: string }
+        address: { type: string }
+        location:
+          type: object
+          properties:
+            gps_lat:
+              type: number
+              nullable: true
+            gps_long:
+              type: number
+              nullable: true
+        lastSeen:
+          allOf:
+            - $ref: "#/components/schemas/FirestoreTimestamp"
+        soc:
+          type: array
+          minItems: 8
+          maxItems: 8
+          items: { type: number }
+        canId:
+          type: array
+          minItems: 8
+          maxItems: 8
+          items: { type: string }
+        chargedBatteryCount:
+          type: integer
+        distanceKm:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [online, offline]
